@@ -1,8 +1,8 @@
 services:
   - type: web
-    name: northstar-demo-bank
+    name: northstar-demo-bank-free
     runtime: node
-    plan: starter
+    plan: free
     buildCommand: npm install && npm run build
     startCommand: npm run start
     autoDeploy: true
@@ -16,8 +16,4 @@ services:
       - key: BANKING_SEED_DEMO
         value: "true"
       - key: BANKING_DATA_DIR
-        value: /var/data/northstar
-    disk:
-      name: northstar-demo-data
-      mountPath: /var/data/northstar
-      sizeGB: 1
+        value: /tmp/northstar-demo
