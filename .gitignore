@@ -4,3 +4,7 @@ data
 .env.local
 .env.*.local
 npm-debug.log*
+android/.gradle
+android/build
+android/app/build
+android/local.properties

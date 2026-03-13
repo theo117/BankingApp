@@ -87,6 +87,24 @@ BANKING_DATA_DIR=/var/data/northstar
 
 The app will create the SQLite file on first boot and seed demo data automatically if the database is empty.
 
+## Android app
+
+An Android wrapper project now exists in [android/README.md](/c:/Users/theod/Documents/Java%202025/business/New%20folder/BankingApp/android/README.md).
+
+Important: this is a native shell around the hosted Next.js app, not a full offline/native port. The current demo depends on server actions, cookie sessions, and Node SQLite, so Android must connect to a running server.
+
+For emulator development, the default Android base URL is:
+
+```bash
+http://10.0.2.2:3000
+```
+
+That works while this app is running locally with:
+
+```bash
+npm run dev
+```
+
 ## Health check
 
 Use:
