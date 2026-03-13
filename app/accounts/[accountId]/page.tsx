@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/auth";
 import { getAccountDetail } from "@/lib/bank";
 import { formatCurrency, formatDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export default async function AccountDetailPage({
   params,
 }: {

@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { getTransactionReceipt } from "@/lib/bank";
 import { formatCurrency, formatDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 export default async function ReceiptPage({
   params,
 }: {

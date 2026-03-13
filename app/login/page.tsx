@@ -3,6 +3,8 @@ import { loginAction, signupAction } from "@/app/actions";
 import { getCurrentUser } from "@/lib/auth";
 import { demoCredentials } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 function getErrorLabel(error?: string) {
   switch (error) {
     case "invalid-credentials":

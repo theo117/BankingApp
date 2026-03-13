@@ -6,6 +6,8 @@ import { getAdminData } from "@/lib/bank";
 import { riskQueue, serviceTickets } from "@/lib/data";
 import { formatCompactCurrency, formatDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 function getMessageLabel(message?: string) {
   switch (message) {
     case "review-approved":

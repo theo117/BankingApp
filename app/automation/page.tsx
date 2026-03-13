@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { getAutomationData } from "@/lib/bank";
 import { formatCurrency, formatDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 const automationIdeas = [
   { label: "Recurring transfers", progress: 92 },
   { label: "Fraud detection rules", progress: 84 },

@@ -15,6 +15,8 @@ import { getDashboardData } from "@/lib/bank";
 import { demoCredentials, monthlyGoals, upcomingPayments } from "@/lib/data";
 import { formatCompactCurrency, formatCurrency, formatDate } from "@/lib/format";
 
+export const dynamic = "force-dynamic";
+
 function getMessageLabel(message?: string) {
   switch (message) {
     case "transfer-success":

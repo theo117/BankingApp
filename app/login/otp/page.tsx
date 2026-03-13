@@ -3,6 +3,8 @@ import { otpAction } from "@/app/actions";
 import { getCurrentUser, getOtpFlow } from "@/lib/auth";
 import { env } from "@/lib/env";
 
+export const dynamic = "force-dynamic";
+
 function getErrorLabel(error?: string) {
   switch (error) {
     case "missing-code":
