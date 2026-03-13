@@ -117,145 +117,162 @@ type SessionRow = {
   expiresAt: string;
 };
 
-const dataDir = env.dataDir;
-mkdirSync(dataDir, { recursive: true });
+let sqlite: DatabaseSync | null = null;
 
-const dbPath = env.dbPath;
-const db = new DatabaseSync(dbPath);
-db.exec("PRAGMA journal_mode = WAL;");
-db.exec("PRAGMA busy_timeout = 5000;");
-db.exec("PRAGMA foreign_keys = ON;");
+const db = {
+  exec(sql: string) {
+    return getDb().exec(sql);
+  },
+  prepare(sql: string) {
+    return getDb().prepare(sql);
+  },
+};
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL UNIQUE,
-    password_hash TEXT NOT NULL,
-    name TEXT NOT NULL,
-    role TEXT NOT NULL,
-    tier TEXT NOT NULL,
-    region TEXT NOT NULL
-  );
+function getDb() {
+  if (sqlite) {
+    return sqlite;
+  }
 
-  CREATE TABLE IF NOT EXISTS sessions (
-    id TEXT PRIMARY KEY,
-    token TEXT NOT NULL UNIQUE,
-    user_id TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+  mkdirSync(env.dataDir, { recursive: true });
 
-  CREATE TABLE IF NOT EXISTS accounts (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    type TEXT NOT NULL,
-    balance REAL NOT NULL,
-    available REAL NOT NULL,
-    iban TEXT NOT NULL UNIQUE,
-    apr REAL,
-    status TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+  sqlite = new DatabaseSync(env.dbPath);
+  sqlite.exec("PRAGMA journal_mode = WAL;");
+  sqlite.exec("PRAGMA busy_timeout = 5000;");
+  sqlite.exec("PRAGMA foreign_keys = ON;");
 
-  CREATE TABLE IF NOT EXISTS transactions (
-    id TEXT PRIMARY KEY,
-    account_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    category TEXT NOT NULL,
-    amount REAL NOT NULL,
-    direction TEXT NOT NULL,
-    status TEXT NOT NULL,
-    date TEXT NOT NULL,
-    counterparty TEXT,
-    reference TEXT,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
-  );
+  sqlite.exec(`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      name TEXT NOT NULL,
+      role TEXT NOT NULL,
+      tier TEXT NOT NULL,
+      region TEXT NOT NULL
+    );
 
-  CREATE TABLE IF NOT EXISTS cards (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    number TEXT NOT NULL,
-    spend_limit REAL NOT NULL,
-    spent REAL NOT NULL,
-    status TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS sessions (
+      id TEXT PRIMARY KEY,
+      token TEXT NOT NULL UNIQUE,
+      user_id TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS beneficiaries (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    bank TEXT NOT NULL,
-    account TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS accounts (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      type TEXT NOT NULL,
+      balance REAL NOT NULL,
+      available REAL NOT NULL,
+      iban TEXT NOT NULL UNIQUE,
+      apr REAL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS automation_jobs (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    name TEXT NOT NULL,
-    cadence TEXT NOT NULL,
-    next_run TEXT NOT NULL,
-    impact TEXT NOT NULL,
-    status TEXT NOT NULL,
-    amount REAL,
-    source_name TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      account_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      category TEXT NOT NULL,
+      amount REAL NOT NULL,
+      direction TEXT NOT NULL,
+      status TEXT NOT NULL,
+      date TEXT NOT NULL,
+      counterparty TEXT,
+      reference TEXT,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS otp_challenges (
-    id TEXT PRIMARY KEY,
-    email TEXT NOT NULL,
-    code TEXT NOT NULL,
-    expires_at TEXT NOT NULL,
-    created_at TEXT NOT NULL
-  );
+    CREATE TABLE IF NOT EXISTS cards (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      number TEXT NOT NULL,
+      spend_limit REAL NOT NULL,
+      spent REAL NOT NULL,
+      status TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS loan_applications (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    amount REAL NOT NULL,
-    term_months INTEGER NOT NULL,
-    purpose TEXT NOT NULL,
-    status TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS beneficiaries (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      bank TEXT NOT NULL,
+      account TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS notifications (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    body TEXT NOT NULL,
-    status TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-  );
+    CREATE TABLE IF NOT EXISTS automation_jobs (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      cadence TEXT NOT NULL,
+      next_run TEXT NOT NULL,
+      impact TEXT NOT NULL,
+      status TEXT NOT NULL,
+      amount REAL,
+      source_name TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
 
-  CREATE TABLE IF NOT EXISTS recurring_templates (
-    id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
-    title TEXT NOT NULL,
-    biller_name TEXT NOT NULL,
-    amount REAL NOT NULL,
-    frequency TEXT NOT NULL,
-    source_account_id TEXT NOT NULL,
-    created_at TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (source_account_id) REFERENCES accounts(id) ON DELETE CASCADE
-  );
-`);
+    CREATE TABLE IF NOT EXISTS otp_challenges (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL,
+      code TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
 
-if (env.seedDemoData) {
-  seedDatabase();
+    CREATE TABLE IF NOT EXISTS loan_applications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      term_months INTEGER NOT NULL,
+      purpose TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS notifications (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      status TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS recurring_templates (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      title TEXT NOT NULL,
+      biller_name TEXT NOT NULL,
+      amount REAL NOT NULL,
+      frequency TEXT NOT NULL,
+      source_account_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (source_account_id) REFERENCES accounts(id) ON DELETE CASCADE
+    );
+  `);
+
+  if (env.seedDemoData) {
+    seedDatabase();
+  }
+
+  return sqlite;
 }
 
 function seedDatabase() {
