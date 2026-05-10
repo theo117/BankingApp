@@ -38,7 +38,7 @@ export default async function OtpPage({
     <main className="mx-auto flex min-h-screen max-w-3xl items-center px-4 py-10 sm:px-6 lg:px-8">
       <section className="glass w-full rounded-[32px] p-8">
         <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/80">Northstar Demo Bank</p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">Demo OTP challenge</h1>
+        <h1 className="mt-3 text-4xl font-semibold tracking-normal text-white">Demo OTP challenge</h1>
         <p className="mt-3 max-w-xl text-sm text-slate-300">
           Password check passed for <span className="text-cyan-200">{challenge.email}</span>. Use the demo one-time code <span className="text-emerald-300">{env.demoOtpCode}</span> to finish signing in.
         </p>

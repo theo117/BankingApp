@@ -36,7 +36,7 @@ export default async function AccountDetailPage({
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm text-slate-300">{account.type}</p>
-                <p className="mt-2 text-4xl font-semibold tracking-tight">{formatCurrency(account.balance)}</p>
+                <p className="mt-2 text-4xl font-semibold tracking-normal">{formatCurrency(account.balance)}</p>
               </div>
               <StatusBadge status={account.status} />
             </div>

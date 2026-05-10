@@ -67,7 +67,7 @@ export default async function AdminPage({
         {metrics.map((metric) => (
           <div key={metric.label} className="glass rounded-[24px] p-5">
             <p className="text-sm text-slate-400">{metric.label}</p>
-            <p className="mt-3 text-3xl font-semibold tracking-tight">{metric.value}</p>
+            <p className="mt-3 text-3xl font-semibold tracking-normal">{metric.value}</p>
             <p className="mt-2 text-sm text-cyan-200">{metric.delta}</p>
           </div>
         ))}

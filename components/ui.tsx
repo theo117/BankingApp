@@ -39,18 +39,26 @@ export function MetricCard({
   return (
     <div className="glass rounded-[24px] p-5">
       <p className="text-sm text-slate-400">{label}</p>
-      <p className="mt-3 text-3xl font-semibold tracking-tight text-white">{value}</p>
+      <p className="mt-3 text-3xl font-semibold tracking-normal text-white">{value}</p>
       <p className="mt-2 text-sm text-emerald-300">{helper}</p>
     </div>
   );
 }
 
 export function ProgressBar({ value }: { value: number }) {
+  const safeValue = Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
+
   return (
-    <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
+    <div
+      className="h-2 w-full overflow-hidden rounded-full bg-white/10"
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(safeValue)}
+    >
       <div
         className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-sky-400 to-emerald-400"
-        style={{ width: `${value}%` }}
+        style={{ width: `${safeValue}%` }}
       />
     </div>
   );
@@ -67,6 +75,10 @@ export function StatusBadge({ status }: { status: string }) {
     Due: "bg-rose-400/15 text-rose-100",
     Flagged: "bg-rose-400/15 text-rose-100",
     Paused: "bg-slate-400/15 text-slate-200",
+    Frozen: "bg-slate-400/15 text-slate-200",
+    Approved: "bg-emerald-400/15 text-emerald-200",
+    Declined: "bg-rose-400/15 text-rose-100",
+    Rejected: "bg-rose-400/15 text-rose-100",
   };
 
   return <span className={`badge ${styles[status] ?? "bg-white/10 text-white"}`}>{status}</span>;

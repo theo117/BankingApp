@@ -117,6 +117,17 @@ type SessionRow = {
   expiresAt: string;
 };
 
+type DebitTransactionInput = {
+  userId: string;
+  accountId: string;
+  title: string;
+  category: string;
+  amount: number;
+  status: string;
+  counterparty: string;
+  reference: string;
+};
+
 let sqlite: DatabaseSync | null = null;
 
 const db = {
@@ -734,6 +745,47 @@ export function createTransferTransaction(input: {
   );
 }
 
+export function createDebitTransactionForUser(input: DebitTransactionInput) {
+  db.exec("BEGIN IMMEDIATE");
+
+  try {
+    const row = db
+      .prepare("SELECT * FROM accounts WHERE id = ? AND user_id = ?")
+      .get(input.accountId, input.userId) as Record<string, unknown> | undefined;
+
+    if (!row) {
+      db.exec("ROLLBACK");
+      return { ok: false as const, reason: "account-missing" as const };
+    }
+
+    const account = mapAccount(row);
+    if (account.available < input.amount) {
+      db.exec("ROLLBACK");
+      return { ok: false as const, reason: "insufficient-funds" as const };
+    }
+
+    const nextAvailable = Number((account.available - input.amount).toFixed(2));
+    const nextBalance = Number((account.balance - input.amount).toFixed(2));
+    updateAccountBalances(account.id, nextBalance, nextAvailable);
+    createTransferTransaction({
+      accountId: account.id,
+      title: input.title,
+      category: input.category,
+      amount: -input.amount,
+      direction: "debit",
+      status: input.status,
+      counterparty: input.counterparty,
+      reference: input.reference,
+    });
+
+    db.exec("COMMIT");
+    return { ok: true as const, accountId: account.id };
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 export function createNotification(input: {
   userId: string;
   title: string;
@@ -905,6 +957,11 @@ export function createRecurringTemplate(input: {
   frequency: string;
   sourceAccountId: string;
 }) {
+  const sourceAccount = getAccountByIdForUser(input.sourceAccountId, input.userId);
+  if (!sourceAccount || sourceAccount.type === "Loan") {
+    return false;
+  }
+
   db.prepare(`
     INSERT INTO recurring_templates (id, user_id, title, biller_name, amount, frequency, source_account_id, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -918,6 +975,7 @@ export function createRecurringTemplate(input: {
     input.sourceAccountId,
     new Date().toISOString(),
   );
+  return true;
 }
 
 export function getRecurringTemplatesByUserId(userId: string) {

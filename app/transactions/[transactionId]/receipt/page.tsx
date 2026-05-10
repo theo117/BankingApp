@@ -25,7 +25,7 @@ export default async function ReceiptPage({
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/80">Transaction Receipt</p>
-            <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">{receipt.title}</h1>
+            <h1 className="mt-3 text-4xl font-semibold tracking-normal text-white">{receipt.title}</h1>
             <p className="mt-2 text-sm text-slate-300">
               {receipt.userName} | {receipt.accountName}
             </p>

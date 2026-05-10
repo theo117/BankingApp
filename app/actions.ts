@@ -8,19 +8,27 @@ import {
   createNotification,
   createRecurringTemplate,
   createBeneficiary,
+  createDebitTransactionForUser,
   createLoanApplication,
   createUserWithStarterAccounts,
-  createTransferTransaction,
-  getAccountByIdForUser,
   getTransactionById,
   getTransactionOwnerUserId,
   toggleCardStatus,
   toggleAutomationJob,
   updateLoanApplicationStatus,
-  updateAccountBalances,
   updateTransactionStatus,
   reverseRejectedTransaction,
 } from "@/lib/database";
+
+function parsePositiveMoney(value: FormDataEntryValue | null) {
+  const amount = Number(String(value ?? "").trim());
+  return Number.isFinite(amount) && amount > 0 ? Number(amount.toFixed(2)) : null;
+}
+
+function parsePositiveInteger(value: FormDataEntryValue | null) {
+  const number = Number(String(value ?? "").trim());
+  return Number.isInteger(number) && number > 0 ? number : null;
+}
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "").trim();
@@ -89,33 +97,28 @@ export async function transferAction(formData: FormData) {
   const user = await requireUser();
   const fromAccountId = String(formData.get("fromAccountId") ?? "");
   const beneficiaryName = String(formData.get("beneficiaryName") ?? "").trim();
-  const amount = Number(formData.get("amount") ?? 0);
+  const amount = parsePositiveMoney(formData.get("amount"));
   const reference = String(formData.get("reference") ?? "").trim() || "Transfer";
 
-  if (!fromAccountId || !beneficiaryName || amount <= 0) {
+  if (!fromAccountId || !beneficiaryName || !amount) {
     redirect("/?message=invalid-transfer");
   }
 
-  const account = getAccountByIdForUser(fromAccountId, user.id);
-
-  if (!account || account.available < amount) {
-    redirect("/?message=insufficient-funds");
-  }
-
-  const nextAvailable = Number((account.available - amount).toFixed(2));
-  const nextBalance = Number((account.balance - amount).toFixed(2));
-
-  updateAccountBalances(account.id, nextBalance, nextAvailable);
-  createTransferTransaction({
-    accountId: account.id,
+  const result = createDebitTransactionForUser({
+    userId: user.id,
+    accountId: fromAccountId,
     title: `Transfer to ${beneficiaryName}`,
     category: "Transfers",
-    amount: -amount,
-    direction: "debit",
+    amount,
     status: amount >= 9000 ? "Flagged" : "Completed",
     counterparty: beneficiaryName,
     reference,
   });
+
+  if (!result.ok) {
+    redirect("/?message=insufficient-funds");
+  }
+
   createNotification({
     userId: user.id,
     title: "Transfer submitted",
@@ -123,7 +126,7 @@ export async function transferAction(formData: FormData) {
   });
 
   revalidatePath("/");
-  revalidatePath(`/accounts/${account.id}`);
+  revalidatePath(`/accounts/${result.accountId}`);
   redirect("/?message=transfer-success");
 }
 
@@ -131,32 +134,28 @@ export async function billPaymentAction(formData: FormData) {
   const user = await requireUser();
   const fromAccountId = String(formData.get("fromAccountId") ?? "");
   const billerName = String(formData.get("billerName") ?? "").trim();
-  const amount = Number(formData.get("amount") ?? 0);
+  const amount = parsePositiveMoney(formData.get("amount"));
   const reference = String(formData.get("reference") ?? "").trim() || "Bill payment";
 
-  if (!fromAccountId || !billerName || amount <= 0) {
+  if (!fromAccountId || !billerName || !amount) {
     redirect("/?message=invalid-bill");
   }
 
-  const account = getAccountByIdForUser(fromAccountId, user.id);
-  if (!account || account.available < amount) {
-    redirect("/?message=insufficient-funds");
-  }
-
-  const nextAvailable = Number((account.available - amount).toFixed(2));
-  const nextBalance = Number((account.balance - amount).toFixed(2));
-
-  updateAccountBalances(account.id, nextBalance, nextAvailable);
-  createTransferTransaction({
-    accountId: account.id,
+  const result = createDebitTransactionForUser({
+    userId: user.id,
+    accountId: fromAccountId,
     title: `Bill payment to ${billerName}`,
     category: "Bills",
-    amount: -amount,
-    direction: "debit",
+    amount,
     status: "Completed",
     counterparty: billerName,
     reference,
   });
+
+  if (!result.ok) {
+    redirect("/?message=insufficient-funds");
+  }
+
   createNotification({
     userId: user.id,
     title: "Bill payment completed",
@@ -164,7 +163,7 @@ export async function billPaymentAction(formData: FormData) {
   });
 
   revalidatePath("/");
-  revalidatePath(`/accounts/${account.id}`);
+  revalidatePath(`/accounts/${result.accountId}`);
   redirect("/?message=bill-success");
 }
 
@@ -190,11 +189,11 @@ export async function createBeneficiaryAction(formData: FormData) {
 
 export async function loanApplicationAction(formData: FormData) {
   const user = await requireUser();
-  const amount = Number(formData.get("amount") ?? 0);
-  const termMonths = Number(formData.get("termMonths") ?? 0);
+  const amount = parsePositiveMoney(formData.get("amount"));
+  const termMonths = parsePositiveInteger(formData.get("termMonths"));
   const purpose = String(formData.get("purpose") ?? "").trim();
 
-  if (amount <= 0 || termMonths <= 0 || !purpose) {
+  if (!amount || !termMonths || !purpose) {
     redirect("/?message=loan-invalid");
   }
 
@@ -215,13 +214,17 @@ export async function createRecurringTemplateAction(formData: FormData) {
   const billerName = String(formData.get("billerName") ?? "").trim();
   const frequency = String(formData.get("frequency") ?? "").trim();
   const sourceAccountId = String(formData.get("sourceAccountId") ?? "");
-  const amount = Number(formData.get("amount") ?? 0);
+  const amount = parsePositiveMoney(formData.get("amount"));
 
-  if (!title || !billerName || !frequency || !sourceAccountId || amount <= 0) {
+  if (!title || !billerName || !frequency || !sourceAccountId || !amount) {
     redirect("/?message=template-invalid");
   }
 
-  createRecurringTemplate({ userId: user.id, title, billerName, frequency, sourceAccountId, amount });
+  const created = createRecurringTemplate({ userId: user.id, title, billerName, frequency, sourceAccountId, amount });
+  if (!created) {
+    redirect("/?message=template-invalid");
+  }
+
   createNotification({
     userId: user.id,
     title: "Recurring bill saved",
@@ -278,13 +281,15 @@ export async function reviewFlaggedTransactionAction(formData: FormData) {
     updateTransactionStatus(transactionId, "Completed");
     const ownerUserId = getTransactionOwnerUserId(transactionId);
     if (ownerUserId) {
-    createNotification({
-      userId: ownerUserId,
-      title: "Flagged transfer approved",
-      body: `${transaction.title} was approved by operations.`,
-    });
+      createNotification({
+        userId: ownerUserId,
+        title: "Flagged transfer approved",
+        body: `${transaction.title} was approved by operations.`,
+      });
     }
     revalidatePath("/admin");
+    revalidatePath("/");
+    revalidatePath(`/accounts/${transaction.accountId}`);
     redirect("/admin?message=review-approved");
   }
 
@@ -300,6 +305,7 @@ export async function reviewFlaggedTransactionAction(formData: FormData) {
     }
     revalidatePath("/admin");
     revalidatePath("/");
+    revalidatePath(`/accounts/${transaction.accountId}`);
     redirect("/admin?message=review-rejected");
   }
 

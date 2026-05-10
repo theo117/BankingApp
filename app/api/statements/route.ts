@@ -33,7 +33,7 @@ export async function GET() {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="northstar-statement-${user.name.replace(/\s+/g, "-").toLowerCase()}.csv"`,
+      "Content-Disposition": `attachment; filename="northstar-statement-${toSafeFilename(user.name)}.csv"`,
     },
   });
 }
@@ -41,4 +41,14 @@ export async function GET() {
 function escapeCsv(value: string) {
   const escaped = value.replace(/"/g, '""');
   return `"${escaped}"`;
+}
+
+function toSafeFilename(value: string) {
+  const slug = value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+
+  return slug || "customer";
 }

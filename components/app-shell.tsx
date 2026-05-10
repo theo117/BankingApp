@@ -1,13 +1,6 @@
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
 
-const navItems = [
-  { href: "/", label: "Dashboard" },
-  { href: "/automation", label: "Automation" },
-  { href: "/admin", label: "Admin" },
-  { href: "/login", label: "Switch User" },
-];
-
 export function AppShell({
   children,
   eyebrow,
@@ -23,8 +16,17 @@ export function AppShell({
     name: string;
     tier: string;
     email: string;
+    role: string;
   };
 }) {
+  const navItems =
+    user.role === "ADMIN"
+      ? [{ href: "/admin", label: "Admin" }]
+      : [
+          { href: "/", label: "Dashboard" },
+          { href: "/automation", label: "Automation" },
+        ];
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
       <header className="glass mb-6 rounded-[28px] px-6 py-5">
@@ -33,7 +35,7 @@ export function AppShell({
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-cyan-200/80">
               {eyebrow}
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-2 text-3xl font-semibold tracking-normal text-white sm:text-4xl">
               {title}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-slate-300 sm:text-base">

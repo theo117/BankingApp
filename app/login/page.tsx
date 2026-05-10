@@ -40,7 +40,7 @@ export default async function LoginPage({
       <div className="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr]">
         <section className="glass rounded-[32px] p-8">
           <p className="text-xs uppercase tracking-[0.24em] text-cyan-200/80">Northstar Demo Bank</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white">
+          <h1 className="mt-3 text-4xl font-semibold tracking-normal text-white">
             Sign in to the live demo environment
           </h1>
           <p className="mt-3 max-w-xl text-sm text-slate-300">

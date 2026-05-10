@@ -116,7 +116,7 @@ export default async function HomePage({
                     <StatusBadge status={account.status} />
                   </div>
 
-                  <p className="mt-5 text-3xl font-semibold tracking-tight">
+                  <p className="mt-5 text-3xl font-semibold tracking-normal">
                     {formatCurrency(account.balance)}
                   </p>
                   <p className="mt-2 text-sm text-slate-400">
