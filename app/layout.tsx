@@ -20,7 +20,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className="flex min-h-screen flex-col">
+        <main className="flex-1">{children}</main>
+        <footer className="px-4 pb-6 text-center text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 sm:px-6 lg:px-8">
+          Powered by Teodor Dev Tech
+        </footer>
+      </body>
     </html>
   );
 }
